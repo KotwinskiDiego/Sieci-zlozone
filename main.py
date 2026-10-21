@@ -57,39 +57,42 @@ def najkrotsza_sciezka(G, start, stop):
 def analiza_eulerowska(G):
     print("\n--- ANALIZA EULEROWSKA ---")
 
-
+    # 1. Sprawdzenie całego grafu
     is_eul = nx.is_eulerian(G)
     print(f"Czy cały graf jest eulerowski? {is_eul}")
 
-    if not is_eul:
-        print("Powód: Niektóre wierzchołki mają nieparzyste stopnie.")
-        print(
-            "Wyciąganie eulerowskiego podgrafu (zgodnie z treścią zadania)..."
-        )
+    if is_eul:
+        euler_subgraph = G
+    else:
 
+        # Pobranie bazy cykli z grafu
+        cycles = nx.cycle_basis(G)
 
-        even_degree_nodes = [node for node, deg in G.degree() if deg % 2 == 0]
-        subgraph = G.subgraph(even_degree_nodes).copy()
+        # Wybieramy najdłuższy cykl
+        longest_cycle = max(cycles, key=len)
 
+        # Tworzymy listę krawędzi tworzących ten cykl
+        edges = [
+            (longest_cycle[i], longest_cycle[(i + 1) % len(longest_cycle)])
+            for i in range(len(longest_cycle))
+        ]
 
-        subgraph.remove_nodes_from(list(nx.isolates(subgraph)))
+        # Tworzymy podgraf zawierający tylko te krawędzie
+        euler_subgraph = G.edge_subgraph(edges).copy()
 
+    # 2. Wyznaczenie ścieżki / cyklu Eulera
+    if euler_subgraph and nx.is_eulerian(euler_subgraph):
+        print("\n[SUKCES] Wyznaczono podgraf eulerowski:")
+        print(f" - Liczba wierzchołków: {euler_subgraph.number_of_nodes()}")
+        print(f" - Liczba krawędzi: {euler_subgraph.number_of_edges()}")
 
-        if len(subgraph) > 0:
-            largest_cc = max(nx.connected_components(subgraph), key=len)
-            euler_subgraph = subgraph.subgraph(largest_cc).copy()
-
-            if nx.is_eulerian(euler_subgraph):
-                print(
-                    f"Znaleziono eulerowski podgraf! ({euler_subgraph.number_of_nodes()} wierzchołków, {euler_subgraph.number_of_edges()} krawędzi)"
-                )
-                euler_circuit = list(nx.eulerian_circuit(euler_subgraph))
-                print(
-                    f"Przykładowa ścieżka/cykl eulerowski w podgrafie (pierwsze 5 kroków): {euler_circuit[:5]}..."
-                )
-            else:
-                print("Podgraf po redukcji nie spełnia warunków spójności.")
-
+        circuit = list(nx.eulerian_circuit(euler_subgraph))
+        print(f" - Długość cyklu Eulera: {len(circuit)} kroków")
+        print(f" - Przykładowe kroki ścieżki: {circuit[:5]}")
+        return euler_subgraph
+    else:
+        print("Nie udało się wyznaczyć podgrafu eulerowskiego.")
+        return None
 
 
 def maksymalny_przeplyw(G, source, target):
@@ -102,15 +105,11 @@ def maksymalny_przeplyw(G, source, target):
     for u, v in G_directed.edges():
         G_directed[u][v]["capacity"] = 1
 
-    try:
-        flow_value, flow_dict = nx.maximum_flow(
-            G_directed, source, target, flow_func=nx.algorithms.flow.edmonds_karp
-        )
-        print(f"\n[Maksymalny Przepływ] Między {source} a {target}: {flow_value}")
-    except nx.NetworkXUnreachable:
-        print(
-            f"Wierzchołki {source} i {target} nie są połączone – przepływ wynosi 0."
-        )
+
+    flow_value, flow_dict = nx.maximum_flow(
+        G_directed, source, target, flow_func=nx.algorithms.flow.edmonds_karp
+    )
+    print(f"\n[Maksymalny Przepływ] Między {source} a {target}: {flow_value}")
 
 
 
@@ -120,11 +119,13 @@ if __name__ == "__main__":
 
     graf = wczytaj_graf_mtx(PLIK)
 
-
-    najkrotsza_sciezka(graf, start=1, stop=100)
+    start = int(input("podaj start najdłuższej ścieżki: "))
+    stop = int(input("podaj koniec do najkrótszej scieżki: "))
+    najkrotsza_sciezka(graf, start=start, stop=stop)
 
 
     analiza_eulerowska(graf)
 
-
-    maksymalny_przeplyw(graf, source=1, target=100)
+    source = int(input("podaj początek maksymalnego przepływu: "))
+    target = int(input("podaj koniec maksymalnego przepływu: "))
+    maksymalny_przeplyw(graf, source=source, target=target)
