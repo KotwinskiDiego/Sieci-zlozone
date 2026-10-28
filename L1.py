@@ -1,6 +1,6 @@
 import networkx as nx
 
-
+#link do repo: https://github.com/KotwinskiDiego/Sieci-zlozone
 
 def wczytaj_graf_mtx(sciezka_do_pliku):
     G = nx.Graph()
